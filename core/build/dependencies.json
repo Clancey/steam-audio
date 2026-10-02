@@ -121,7 +121,7 @@
                     ]
                 },
                 {
-                    "platforms": ["windows-arm64", "linux-arm64", "android-arm64", "ios"],
+                    "platforms": ["windows-arm64", "linux-arm64", "android-arm64", "ios", "visionos", "visionos_simulator"],
                     "flags": [
                         "-DTARGET_C_ARCH=armv8-a",
                         "-DTARGET_CXX_ARCH=armv8-a",

@@ -37,6 +37,13 @@ elseif (APPLE AND (CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUA
     if (CMAKE_XCODE_ATTRIBUTE_SDKROOT STREQUAL "iphonesimulator")
         set(IPL_IOS_SIMULATOR TRUE)
     endif()
+    # visionOS is built like iOS (static library, same code paths), but its binaries go in their own directory.
+    if (CMAKE_SYSTEM_NAME STREQUAL "visionOS")
+        set(IPL_OS_VISIONOS TRUE)
+        if (CMAKE_OSX_SYSROOT MATCHES "[Xx][Rr][Ss]imulator")
+            set(IPL_IOS_SIMULATOR TRUE)
+        endif()
+    endif()
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     set(IPL_OS_WASM TRUE)
 endif()

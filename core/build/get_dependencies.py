@@ -554,6 +554,13 @@ def configure_cmake(name, cmake_layers, platform, cmake, vs_version, ndk_path, e
     elif platform == 'ios':
         cmake_args += ['-G', 'Xcode']
         cmake_args += ['-DCMAKE_TOOLCHAIN_FILE=' + toolchain('ios')]
+    elif platform in ['visionos', 'visionos_simulator']:
+        cmake_args += ['-G', 'Unix Makefiles']
+        cmake_args += ['-DCMAKE_TOOLCHAIN_FILE=' + toolchain('visionos')]
+        if platform == 'visionos_simulator':
+            cmake_args += ['-DCMAKE_OSX_SYSROOT=xrsimulator']
+        cmake_args += ['-DCMAKE_BUILD_TYPE=' + ('Debug' if debug else 'Release')]
+        cmake_args += ['-DCMAKE_POSITION_INDEPENDENT_CODE=TRUE']
     elif platform == 'wasm':
         cmake_args += ['-G', 'Unix Makefiles']
         cmake_args += ['-DCMAKE_TOOLCHAIN_FILE=' + os.path.join(emsdk_path, 'upstream', 'emscripten', 'cmake', 'Modules', 'Platform', 'Emscripten.cmake')]
@@ -793,7 +800,7 @@ print('Host platform:', host_platform)
 # --- Command-line parameters
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-p', '--platform', help = "Target operating system.", choices = ['windows', 'osx', 'linux', 'android', 'ios', 'wasm'], type = str.lower, default = host_os)
+parser.add_argument('-p', '--platform', help = "Target operating system.", choices = ['windows', 'osx', 'linux', 'android', 'ios', 'visionos', 'visionos_simulator', 'wasm'], type = str.lower, default = host_os)
 parser.add_argument('-a', '--architecture', help = "CPU architecture.", choices = ['x86', 'x64', 'armv7', 'arm64'], type = str.lower, default = 'x64')
 parser.add_argument('-t', '--toolchain', help = "Compiler toolchain. (Windows only)", choices = ['vs2013', 'vs2015', 'vs2017', 'vs2019', 'vs2022'], type = str.lower, default = 'vs2019')
 parser.add_argument('--ndk', help = "Path to the Android NDK. (Android only)", default = os.getenv('ANDROID_NDK'))
@@ -807,7 +814,7 @@ parser.add_argument('--libsonly', help = "Build library dependencies only.", act
 parser.add_argument('--sharedcrt', help = "Link to shared C/C++ runtime library. (Windows only)", action='store_true', default=False)
 args = parser.parse_args()
 
-if args.platform in ['osx', 'ios', 'wasm']:
+if args.platform in ['osx', 'ios', 'visionos', 'visionos_simulator', 'wasm']:
     target_platform = args.platform
 elif args.platform == 'android' and args.architecture == 'arm64':
     target_platform = 'android-armv8'
@@ -837,7 +844,7 @@ if args.clean is not None:
 if target_platform.startswith('android-'):
     os.environ['ANDROID_NDK'] = args.ndk
     os.environ['PATH'] += os.pathsep + os.path.join(args.ndk, 'prebuilt', 'windows-x6_64', 'bin')
-elif target_platform == 'ios':
+elif target_platform in ['ios', 'visionos', 'visionos_simulator']:
     os.environ['SDKROOT'] = ''
 
 

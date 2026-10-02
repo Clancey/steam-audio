@@ -33,7 +33,7 @@ def detect_host_system():
 # Parses the command line.
 def parse_command_line(host_system):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--platform', help = "Target operating system.", choices = ['windows', 'osx', 'linux', 'android', 'ios', 'wasm'], type = str.lower, default = host_system)
+    parser.add_argument('-p', '--platform', help = "Target operating system.", choices = ['windows', 'osx', 'linux', 'android', 'ios', 'visionos', 'visionos_simulator', 'wasm'], type = str.lower, default = host_system)
     parser.add_argument('-t', '--toolchain', help = "Compiler toolchain. (Windows only)", choices = ['vs2013', 'vs2015', 'vs2017', 'vs2019', 'vs2022'], type = str.lower, default = 'vs2019')
     parser.add_argument('-a', '--architecture', help = "CPU architecture.", choices = ['x86', 'x64', 'armv7', 'arm64'], type = str.lower, default = 'x64')
     parser.add_argument('-c', '--configuration', help = "Build configuration.", choices = ['debug', 'release'], type = str.lower, default = 'release')
@@ -52,6 +52,8 @@ def build_subdir(args):
         return args.platform
     elif args.platform in ['linux', 'android']:
         return "-".join([args.platform, args.architecture, args.configuration])
+    elif args.platform in ['visionos', 'visionos_simulator']:
+        return "-".join([args.platform, args.configuration])
     elif args.platform in ['wasm']:
         return "-".join([args.platform, args.configuration])
 
@@ -77,7 +79,7 @@ def generator_name(args):
         return generator + suffix
     elif args.platform in ['osx', 'ios']:
         return 'Xcode'
-    elif args.platform in ['linux', 'android', 'wasm']:
+    elif args.platform in ['linux', 'android', 'visionos', 'visionos_simulator', 'wasm']:
         return 'Unix Makefiles'
 
 # Returns the configuration name to pass to CMake.
@@ -141,6 +143,16 @@ def cmake_generate(args):
     elif args.platform == 'ios':
         cmake_args += ['-DCMAKE_TOOLCHAIN_FILE=' + root_dir() + '/build/toolchain_ios.cmake']
 
+    elif args.platform in ['visionos', 'visionos_simulator']:
+        cmake_args += ['-DCMAKE_TOOLCHAIN_FILE=' + root_dir() + '/build/toolchain_visionos.cmake']
+        if args.platform == 'visionos_simulator':
+            cmake_args += ['-DCMAKE_OSX_SYSROOT=xrsimulator']
+        cmake_args += ['-DCMAKE_BUILD_TYPE=' + config_name(args)]
+        cmake_args += ['-DCMAKE_POSITION_INDEPENDENT_CODE=TRUE']
+        cmake_args += ['-DBUILD_SHARED_LIBS=FALSE']
+        # Nothing that has to run on the build machine can be built for visionOS.
+        cmake_args += ['-DSTEAMAUDIO_BUILD_TESTS=FALSE']
+
     elif args.platform == 'wasm':
         cmake_args += ['-DCMAKE_TOOLCHAIN_FILE=' + os.environ.get('EMSDK') + '/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake']
         cmake_args += ['-DBUILD_SHARED_LIBS=FALSE']
@@ -162,6 +174,8 @@ def cmake_generate(args):
         cmake_args += ['-DSTEAMAUDIO_ENABLE_EMBREE=FALSE']
         cmake_args += ['-DSTEAMAUDIO_ENABLE_RADEONRAYS=FALSE']
         cmake_args += ['-DSTEAMAUDIO_ENABLE_TRUEAUDIONEXT=FALSE']
+        cmake_args += ['-DSTEAMAUDIO_ENABLE_MKL=FALSE']
+        cmake_args += ['-DSTEAMAUDIO_ENABLE_FFTS=FALSE']
 
     # If specified, enable unity builds.
     if args.unity:
